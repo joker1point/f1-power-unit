@@ -241,20 +241,20 @@
 
     M.cast = new THREE.MeshStandardMaterial({
       color: 0xaeb6be, map: TE.cast, bumpMap: TE.castB, bumpScale: .012,
-      metalness: .72, roughness: .46, envMapIntensity: 1
+      metalness: .72, roughness: .40, envMapIntensity: 1.25
     });
     M.castDark = new THREE.MeshStandardMaterial({
       color: 0x767e86, map: TE.cast, metalness: .62, roughness: .54, envMapIntensity: .85
     });
     M.castLight = new THREE.MeshStandardMaterial({
-      color: 0xc0c8cf, map: TE.cast, metalness: .62, roughness: .42, envMapIntensity: 1.1
+      color: 0xc0c8cf, map: TE.cast, metalness: .62, roughness: .36, envMapIntensity: 1.3
     });
     M.mag = new THREE.MeshStandardMaterial({
-      color: 0x8d949b, map: TE.cast, metalness: .58, roughness: .56, envMapIntensity: .9
+      color: 0x8d949b, map: TE.cast, metalness: .58, roughness: .52, envMapIntensity: 1.05
     });
     M.machined = new THREE.MeshStandardMaterial({
       color: 0xc4cbd2, map: TE.brush, bumpMap: TE.brush, bumpScale: .004,
-      metalness: .92, roughness: .24, envMapIntensity: 1.4
+      metalness: .92, roughness: .24, envMapIntensity: 1.55
     });
     M.lid = new THREE.MeshStandardMaterial({
       color: 0xb9c1c9, map: TE.brush, bumpMap: TE.brush, bumpScale: .005,
@@ -323,12 +323,12 @@
     const c = document.createElement('canvas'); c.width = w; c.height = h;
     const x = c.getContext('2d');
     const g = x.createLinearGradient(0, 0, 0, h);
-    g.addColorStop(0, '#171b20');
-    g.addColorStop(.42, '#20252b');
-    g.addColorStop(.52, '#2b3138');
-    g.addColorStop(.56, '#0b0d10');
-    g.addColorStop(.8, '#06070a');
-    g.addColorStop(1, '#030405');
+    g.addColorStop(0, '#111419');
+    g.addColorStop(.42, '#171a20');
+    g.addColorStop(.52, '#1e2228');
+    g.addColorStop(.56, '#07080b');
+    g.addColorStop(.8, '#040506');
+    g.addColorStop(1, '#020304');
     x.fillStyle = g; x.fillRect(0, 0, w, h);
 
     function soft(cx, cy, rx, ry, alpha, tint) {
@@ -355,6 +355,25 @@
     hz.addColorStop(0, 'rgba(255,255,255,.12)');
     hz.addColorStop(1, 'rgba(255,255,255,0)');
     x.fillStyle = hz; x.fillRect(0, h * .5, w, h * .08);
+
+    // long overhead softbox — the crisp band that makes the alloy read as machined metal
+    const topStrip = x.createLinearGradient(0, h * .09, 0, h * .27);
+    topStrip.addColorStop(0, 'rgba(255,255,255,0)');
+    topStrip.addColorStop(.40, 'rgba(255,253,248,.95)');
+    topStrip.addColorStop(.60, 'rgba(255,253,248,.95)');
+    topStrip.addColorStop(1, 'rgba(255,255,255,0)');
+    x.fillStyle = topStrip; x.fillRect(0, h * .09, w, h * .18);
+
+    function vStrip(cx, wid, a, tint) {
+      const sg = x.createLinearGradient(cx - wid, 0, cx + wid, 0);
+      sg.addColorStop(0, 'rgba(' + tint + ',0)');
+      sg.addColorStop(.5, 'rgba(' + tint + ',' + a + ')');
+      sg.addColorStop(1, 'rgba(' + tint + ',0)');
+      x.fillStyle = sg;
+      x.fillRect(cx - wid, h * .15, wid * 2, h * .36);
+    }
+    vStrip(w * .17, 44, .85, '240,246,255');
+    vStrip(w * .83, 38, .6, '255,234,214');
 
     const t = new THREE.CanvasTexture(c);
     t.mapping = THREE.EquirectangularReflectionMapping;

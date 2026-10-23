@@ -71,10 +71,10 @@
   contact.position.set(-.5, -4.27, .2);
   scene.add(contact);
 
-  const hemi = new THREE.HemisphereLight(0xaec6e2, 0x0a0c10, .22);
+  const hemi = new THREE.HemisphereLight(0xaec6e2, 0x0a0c10, .18);
   scene.add(hemi);
 
-  const key = new THREE.DirectionalLight(0xfffaf2, 3.6);
+  const key = new THREE.DirectionalLight(0xfffaf2, 4.2);
   key.position.set(-14, 18, -8);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
