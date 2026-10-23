@@ -321,9 +321,9 @@
     TE.normFoil = tex(normalCanvas(noiseCanvas(256, [8, 16, 32, 64], 128, 235), 2.4), 3, 3, false);
 
     M.cast = new THREE.MeshStandardMaterial({
-      color: 0xa4adb6, map: TE.cast, bumpMap: TE.castB, bumpScale: .012,
+      color: 0x9ea7b0, map: TE.cast, bumpMap: TE.castB, bumpScale: .012,
       roughnessMap: TE.rough, normalMap: TE.norm, normalScale: new THREE.Vector2(.42, .42),
-      metalness: .58, roughness: .56, envMapIntensity: .95
+      metalness: .58, roughness: .58, envMapIntensity: .88
     });
     M.castDark = new THREE.MeshStandardMaterial({
       color: 0x767e86, map: TE.cast,
@@ -343,12 +343,12 @@
     M.machined = new THREE.MeshStandardMaterial({
       color: 0xc4cbd2, map: TE.brush, bumpMap: TE.brush, bumpScale: .004,
       roughnessMap: TE.roughFine, normalMap: TE.normFine, normalScale: new THREE.Vector2(.2, .2),
-      metalness: .82, roughness: .36, envMapIntensity: 1.2
+      metalness: .82, roughness: .4, envMapIntensity: 1.05
     });
     M.lid = new THREE.MeshStandardMaterial({
       color: 0xb9c1c9, map: TE.brush, bumpMap: TE.brush, bumpScale: .005,
       roughnessMap: TE.roughFine, normalMap: TE.normFine, normalScale: new THREE.Vector2(.24, .24),
-      metalness: .8, roughness: .38, envMapIntensity: 1.22
+      metalness: .8, roughness: .42, envMapIntensity: 1.08
     });
     // polished aluminium with no brushed map: the brush streaks ran around the
     // lathe axis and turned the stacks into corrugated funnels
@@ -428,7 +428,9 @@
       color: 0x8c939a, metalness: .7, roughness: .4
     });
     M.valve = new THREE.MeshPhysicalMaterial({
-      color: 0xd6dce3, metalness: 1, roughness: .1, clearcoat: .5, clearcoatRoughness: .1, envMapIntensity: 1.8
+      // a mirror-grade valve in a dark studio reads as a black shape; a little
+      // roughness keeps the cone and the stem legible when one is pulled out
+      color: 0xd6dce3, metalness: .9, roughness: .24, clearcoat: .5, clearcoatRoughness: .12, envMapIntensity: 1.5
     });
     M.glass = new THREE.MeshPhysicalMaterial({
       color: 0x11161c, metalness: .1, roughness: .08, transparent: true, opacity: .5, envMapIntensity: 1.6

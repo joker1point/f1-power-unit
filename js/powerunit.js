@@ -44,6 +44,43 @@
     return PU.tube(points, r, t || 40, rad || 12);
   }
 
+  /* End-face relief.
+     The front and rear walls of block / head / cam cover are the largest
+     unbroken surfaces the camera meets at the clutch and turbo stations, and a
+     bare rounded rectangle at that size reads as folded sheet metal. Every face
+     gets a proud cast rim, a darker field inside it, a core plug, two dowels
+     and a bolt ring — enough structure that the eye reads a machined casting. */
+  function endRelief(parent, o) {
+    const ez = o.z > 0 ? 1 : -1;
+    const zf = o.z + ez * .02;
+    const w = o.w, h = o.h, y = o.y, bar = .15;
+    const rim = (bw, bh, bx, by) => mesh(parent, PU.rbox(bw, bh, .12, .03), M.cast, bx, by, zf + ez * .05);
+    rim(w, bar, 0, y + h / 2 - bar / 2);
+    rim(w, bar, 0, y - h / 2 + bar / 2);
+    rim(bar, h - bar * 2, w / 2 - bar / 2, y);
+    rim(bar, h - bar * 2, -w / 2 + bar / 2, y);
+    mesh(parent, PU.rbox(w - bar * 2 - .02, h - bar * 2 - .02, .06, .02), M.castDark, 0, y, zf + ez * .015);
+    mesh(parent, PU.disc(.44, .1, 22), M.castLight, 0, y, zf + ez * .07).rotation.x = PI / 2;
+    if (!endRelief.rim) endRelief.rim = new THREE.TorusGeometry(.46, .05, 8, 24);
+    mesh(parent, endRelief.rim, M.machined, 0, y, zf + ez * .11);
+    for (const dx of [-1, 1]) {
+      mesh(parent, PU.disc(.075, .17, 10), M.machined, dx * (w / 2 - .36), y + h / 2 - .38, zf + ez * .08).rotation.x = PI / 2;
+    }
+    const bl = [], inset = bar * .5;
+    const nx = Math.max(2, Math.round(w / .78)), ny = Math.max(2, Math.round(h / .78));
+    for (let i = 0; i < nx; i++) {
+      const x = -w / 2 + inset + (w - inset * 2) * i / (nx - 1);
+      bl.push([x, y + h / 2 - inset, zf + ez * .1, 0, PI / 2, 0]);
+      bl.push([x, y - h / 2 + inset, zf + ez * .1, 0, PI / 2, 0]);
+    }
+    for (let i = 1; i < ny - 1; i++) {
+      const yy = y - h / 2 + inset + (h - inset * 2) * i / (ny - 1);
+      bl.push([w / 2 - inset, yy, zf + ez * .1, 0, PI / 2, 0]);
+      bl.push([-w / 2 + inset, yy, zf + ez * .1, 0, PI / 2, 0]);
+    }
+    parent.add(PU.boltMesh(bl, .085, .13, M.machined));
+  }
+
   function buildPowerUnit() {
     const root = new THREE.Group();
     root.name = 'power-unit';
@@ -239,6 +276,9 @@
       const cover = grp(bank, 'cam-cover');
       const valvesG = grp(bank, 'valves');
       const camsG = grp(bank, 'cams');
+      // shafts get their own group: fading "cams" to reveal the valve train
+      // must ghost the shafts, not take the carrier towers with them
+      const camShaftsG = grp(camsG, 'cam-shafts');
 
       const outerX = sign * 1.62, innerX = -sign * 1.62;
       const inner = -sign;                    // valley direction in local x
@@ -280,14 +320,18 @@
       }
 
       // ---- head ----
+      // The casting used to run up to 7.87 with the whole valve train buried
+      // inside it — only ~2 mm of retainer poked out, so the "24 valves"
+      // station was a handful of tori on a blank deck. It now stops at 7.55 and
+      // everything above is an open valve bay that the cam cover closes.
       mesh(head, PU.rbox(3.42, .1, 11.8, .02), M.darkSteel, 0, 6.24, 0);
-      mesh(head, PU.rbox(3.2, 1.5, 11.5, .12), PU.linerMat, 0, 7.06, 0);
-      mesh(head, PU.rbox(3.4, 1.62, 11.7, .14), M.cast, 0, 7.06, 0);
-      // combustion chamber bumps on top? valleys between cam carriers
-      mesh(head, PU.rbox(3.15, .18, 11.5, .05), M.castDark, 0, 7.93, 0);
+      mesh(head, PU.rbox(3.2, 1.22, 11.5, .12), PU.linerMat, 0, 6.9, 0);
+      mesh(head, PU.rbox(3.4, 1.3, 11.7, .14), M.cast, 0, 6.9, 0);
+      // valve deck: the machined plate the actuators are bolted through
+      mesh(head, PU.rbox(3.2, .14, 11.5, .05), M.lid, 0, 7.56, 0);
       // ribs
       for (let i = 0; i < 6; i++) {
-        mesh(head, PU.rbox(.22, 1.25, .22, .04), M.cast, outerX + sign * .16, 7.1, -4.5 + i * 1.7);
+        mesh(head, PU.rbox(.22, 1.0, .22, .04), M.cast, outerX + sign * .16, 6.95, -4.5 + i * 1.7);
       }
       // intake port stubs on valley side
       CFG.ZS.forEach((z) => {
@@ -381,6 +425,14 @@
         ], .035, 16, 6), M.black);
       });
 
+      // end faces: rear of the unit at the clutch / turbo stations is three
+      // stacked blank plates otherwise
+      for (const ez of [-1, 1]) {
+        endRelief(shell, { w: 3.12, h: 2.44, y: 4.6, z: ez * 5.94 });
+        endRelief(head, { w: 3.18, h: 1.16, y: 6.9, z: ez * 5.85 });
+        endRelief(cover, { w: 3.1, h: 1.08, y: 8.62, z: ez * 5.75 });
+      }
+
       // ---- camshafts ----
       const cams = [];
       const lobeGeo = (() => {
@@ -389,7 +441,10 @@
         for (let i = 0; i <= N; i++) {
           const a = i / N * TAU;
           const nose = Math.pow(Math.max(0, Math.cos(a)), 2.4);
-          const r = .33 + .3 * nose;
+          // base circle .34 lands exactly on the follower face and the nose
+          // adds the same 0.27 the animate() step lifts by, so a lobe can no
+          // longer cut through its own bucket at full lift
+          const r = .34 + .27 * nose;
           const x = Math.sin(a) * r, y = Math.cos(a) * r;
           if (i === 0) s.moveTo(x, y); else s.lineTo(x, y);
         }
@@ -398,11 +453,11 @@
         return g;
       })();
       [
-        { x: -sign * .95, kind: 'in', phase: 0 },
-        { x: sign * .95, kind: 'ex', phase: PI * .92 }
+        { x: -sign * .6, kind: 'in', phase: 0 },
+        { x: sign * .6, kind: 'ex', phase: PI * .92 }
       ].forEach((cd) => {
-        const shaft = grp(camsG, 'cam-' + cd.kind);
-        shaft.position.set(cd.x, 8.42, 0);
+        const shaft = grp(camShaftsG, 'cam-' + cd.kind);
+        shaft.position.set(cd.x, 8.62, 0);
         mesh(shaft, cylZ(.16, 11.2, 18), M.machined, 0, 0, 0);
         for (let i = 0; i < 4; i++) {
           mesh(shaft, PU.disc(.24, .28, 18), M.machined, 0, 0, -5.3 + i * 3.5).rotation.x = PI / 2;
@@ -415,59 +470,69 @@
           }
         });
         cams.push({ group: shaft, phase: cd.phase, kind: cd.kind });
-        // cam carrier rails + bearing caps
-        mesh(head, PU.rbox(.5, .16, 11.1, .04), M.castDark, cd.x, 7.99, 0);
+        // carrier ladder: rail on the valve deck, machined tower, bolted cap.
+        // The old floating cap over a bare plate read as a bracket.
+        mesh(head, PU.rbox(.56, .18, 11.1, .04), M.castDark, cd.x, 7.64, 0);
         [-5.0, -1.8, 1.6, 5.0].forEach((cz) => {
-          mesh(camsG, PU.rbox(.78, .26, .38, .05), M.cast, cd.x, 8.6, cz);
-          mesh(camsG, PU.disc(.08, .1, 8), M.darkSteel, cd.x - .28, 8.75, cz);
-          mesh(camsG, PU.disc(.08, .1, 8), M.darkSteel, cd.x + .28, 8.75, cz);
+          mesh(camsG, PU.rbox(.5, .95, .4, .07), M.castDark, cd.x, 8.12, cz);
+          mesh(camsG, PU.rbox(.74, .24, .36, .05), M.cast, cd.x, 8.72, cz);
+          mesh(camsG, PU.disc(.075, .1, 8), M.darkSteel, cd.x - .26, 8.86, cz);
+          mesh(camsG, PU.disc(.075, .1, 8), M.darkSteel, cd.x + .26, 8.86, cz);
         });
       });
 
-      // ---- 12 valves (2 in + 2 ex per cylinder) ----
+      // ---- 12 valves per bank, each on its own pneumatic actuator ----
+      // The old valve was a 1.8-long stem buried in the head casting with a
+      // loose torus for a spring seat, which is why the close-up read as a heap
+      // of needles. Now: follower, stem, keeper, head — plus a real canister the
+      // follower slides into, one air line per cylinder.
+      const stemGeo = new THREE.CylinderGeometry(.055, .055, 1.45, 8);
+      stemGeo.translate(0, -.725, 0);
+      const valveHeadGeo = new THREE.ConeGeometry(.37, .2, 20);
+      valveHeadGeo.rotateX(PI);
+      const followerGeo = new THREE.CylinderGeometry(.25, .24, .43, 16);
+      const keeperGeo = new THREE.TorusGeometry(.11, .025, 6, 14);
+      const actBodyGeo = new THREE.CylinderGeometry(.29, .31, .3, 16);
+      const actCapGeo = new THREE.CylinderGeometry(.32, .32, .05, 16);
+      const portGeo = new THREE.TorusGeometry(.315, .022, 6, 16);
       const valveMeshes = [];
-      const valveGeo = (() => {
-        const stem = new THREE.CylinderGeometry(.065, .065, 1.8, 10);
-        stem.translate(0, -.9, 0);
-        return stem;
-      })();
-      const headGeo = new THREE.ConeGeometry(.4, .22, 22);
-      headGeo.rotateX(PI);
-      const bucketGeo = new THREE.CylinderGeometry(.23, .23, .16, 18);
       CFG.ZS.forEach((z, ci) => {
-        [-.4, .4].forEach((dz) => {
-          // intake
-          const vin = grp(valvesG);
-          vin.position.set(-sign * .58, 8.02, z + dz);
-          mesh(vin, valveGeo, M.valve, 0, 0, 0);
-          mesh(vin, headGeo, M.valve, 0, -1.8, 0);
-          mesh(vin, bucketGeo, M.machined, 0, .02, 0);
-          vin.userData = { kind: 'in', ci: ci, baseY: 8.02, phase: CFG.PIN[ci] / 2 };
-          valveMeshes.push(vin);
-          // exhaust
-          const vex = grp(valvesG);
-          vex.position.set(sign * .58, 8.02, z + dz);
-          mesh(vex, valveGeo, M.valve, 0, 0, 0);
-          mesh(vex, headGeo, M.valve, 0, -1.8, 0);
-          mesh(vex, bucketGeo, M.machined, 0, .02, 0);
-          vex.userData = { kind: 'ex', ci: ci, baseY: 8.02, phase: CFG.PIN[ci] / 2 + PI * .92 };
-          valveMeshes.push(vex);
-        });
-      });
-      // valve springs replaced by pneumatic cylinders (visual)
-      CFG.ZS.forEach((z, ci) => {
-        [-.4, .4].forEach((dz) => {
-          [ -sign * .58, sign * .58 ].forEach((vx) => {
-            mesh(valvesG, new THREE.TorusGeometry(.16, .03, 6, 16), M.darkSteel, vx, 7.98, z + dz).rotation.x = PI / 2;
+        [-.42, .42].forEach((dz) => {
+          [-sign, sign].forEach((sx) => {
+            const kind = sx === -sign ? 'in' : 'ex';
+            const vx = sx * .6;
+            // static canister + machined cap + pneumatic port ring. Dark
+            // anodised so the row of actuators reads against the bright deck.
+            mesh(valvesG, actBodyGeo, M.black, vx, 7.71, z + dz);
+            mesh(valvesG, actCapGeo, M.machined, vx, 7.845, z + dz);
+            mesh(valvesG, portGeo, M.orange, vx, 7.6, z + dz).rotation.x = PI / 2;
+            // moving valve: origin sits on the follower face
+            const g = grp(valvesG);
+            g.position.set(vx, 8.28, z + dz);
+            mesh(g, followerGeo, M.machined, 0, -.215, 0);
+            mesh(g, stemGeo, M.valve, 0, 0, 0);
+            mesh(g, keeperGeo, M.darkSteel, 0, -.36, 0).rotation.x = PI / 2;
+            mesh(g, valveHeadGeo, M.valve, 0, -1.45, 0);
+            g.userData = {
+              kind: kind, ci: ci, baseY: 8.28,
+              phase: CFG.PIN[ci] / 2 + (kind === 'ex' ? PI * .92 : 0)
+            };
+            valveMeshes.push(g);
           });
         });
+        // one air line per cylinder, arcing between the two valves on each side
+        for (const sx of [-sign, sign]) {
+          mesh(valvesG, tubeZ([
+            [sx * .6, 7.9, z - .42], [sx * .78, 8.0, z], [sx * .6, 7.9, z + .42]
+          ], .03, 14, 6), M.black);
+        }
       });
 
       // ---- external details on bank ----
       // pre-chamber / spark plug bosses
       CFG.ZS.forEach((z) => {
-        mesh(head, PU.cyl(.17, .12, .5, 12), M.castDark, 0, 8.0, z);
-        mesh(head, PU.disc(.12, .08, 10), M.gold, 0, 8.27, z);
+        mesh(head, PU.cyl(.17, .12, .38, 12), M.castDark, 0, 7.74, z);
+        mesh(head, PU.disc(.12, .08, 10), M.gold, 0, 7.95, z);
       });
       // fuel rail + injectors
       const rail = mesh(bank, cylZ(.13, 10.4, 12), M.machined, innerX * .82, 7.55, 0);
@@ -533,7 +598,7 @@
       A.fadeGroups['block' + (b === 0 ? 'R' : 'L')] = shell;
       A.fadeGroups['head' + (b === 0 ? 'R' : 'L')] = head;
       A.fadeGroups['cover' + (b === 0 ? 'R' : 'L')] = cover;
-      A.fadeGroups['cams' + (b === 0 ? 'R' : 'L')] = camsG;
+      A.fadeGroups['cams' + (b === 0 ? 'R' : 'L')] = camShaftsG;
       A.fadeGroups['valves' + (b === 0 ? 'R' : 'L')] = valvesG;
 
       // explode offsets (bank-local): the layers have to clear each other by
@@ -555,7 +620,7 @@
         return o;
       };
       // stored after all banks; push per bank
-      A['bank' + b] = { group: bank, sign: sign, shell: shell, head: head, cover: cover, valves: valvesG, cams: camsG };
+      A['bank' + b] = { group: bank, sign: sign, shell: shell, head: head, cover: cover, valves: valvesG, cams: camsG, camShafts: camShaftsG };
     }
 
     /* =========================================================
@@ -961,6 +1026,10 @@
     const V = (th, ph, zm, tx, ty, tz) => ({ theta: th, phi: ph, zoom: zm, target: [tx, ty, tz] });
     const lp = A.cylinders.find(c => c.bank === 1 && c.z === 0) || A.cylinders[0];
     const leftPiston = lp.piston, leftRod = lp.rod;
+    // the valve that the tour pulls out — its own group, so the label rides up
+    // with the stem instead of pointing at an empty canister
+    const showValve = A.bank1.valves.children.find(o =>
+      o.userData && o.userData.baseY !== undefined && o.userData.kind === 'in' && o.userData.ci === 1) || left.valves;
     A.hotspots = [
       { id: 'coverL', label: '气门室盖', anchor: anchor(left.cover, -left.sign * 1.1, 9.4, -4.2), diagram: true, onlyDiagram: true, internal: false, view: V(-2.5, 1.0, .58, -4.2, 6.2, -2) },
       { id: 'headL', label: '缸盖 · 24 气门', anchor: anchor(left.head, 0, 7.4, 0), diagram: true, onlyDiagram: true, internal: false, view: V(-2.6, 1.02, .6, -4.4, 5.4, 0) },
@@ -971,7 +1040,7 @@
       { id: 'plenum2', label: '稳压腔 · 单一大碳箱', anchor: anchor(plenum, 1.4, 9.4, -5.78), internal: false, view: V(-2.1, .98, .7, 0, 8.7, -1.5) },
       { id: 'stack', label: '喇叭口 · 固定长度', anchor: anchor(stacksG, -1.18, 8.2, 0), diagram: true, internal: true, view: V(-2.0, .98, .58, 0, 7.7, 0) },
       { id: 'cam', label: '双凸轮轴 · DOHC', anchor: anchor(left.cover, -left.sign * .95, 9.5, -1.2), internal: false, view: V(-2.6, 1.02, .58, -3.9, 5.8, 0) },
-      { id: 'valve', label: '气动气门（无弹簧）', anchor: anchor(left.valves, -left.sign * .58, 8.52, -4.2), internal: true, view: V(-2.9, 1.05, .55, -4.2, 5.4, -3.6) },
+      { id: 'valve', label: '气动气门（无弹簧）', anchor: anchor(showValve, 0, .34, .2), internal: true, view: V(-2.9, 1.05, .55, -4.2, 5.4, -3.6) },
       { id: 'prech', label: '预燃室 · 湍流射流点火', anchor: anchor(left.head, -left.sign * .9, 7.5, -4.2), internal: true, view: V(-2.7, 1.0, .58, -4.4, 5, -3.4) },
       { id: 'piston', label: '活塞 · 锻铝', anchor: anchor(leftPiston, 0, .55, 0), diagram: true, internal: true, view: V(-3.1, 1.18, .62, -4.1, 3.2, 0) },
       { id: 'rod', label: '钛合金连杆', anchor: anchor(leftRod, 0, 2.1, 0), diagram: true, internal: true, view: V(-3.05, 1.24, .6, -3.6, 2.2, 0) },
@@ -1010,7 +1079,7 @@
       }
       // cams
       [A.bank0, A.bank1].forEach((bk) => {
-        bk.cams.children.forEach((cam, ci) => {
+        bk.camShafts.children.forEach((cam, ci) => {
           cam.rotation.z = theta * .5 + (ci === 0 ? 0 : PI * .92);
         });
       });
@@ -1049,8 +1118,10 @@
           const camAngle = (theta * .5 + u.phase) % TAU;
           const open = Math.max(0, -Math.cos(camAngle));
           const lift = open * open * .27;
-          const extra = (v === A.extractValve) ? A.extractAmt * 1.8 : 0;
-          v.position.y = u.baseY - lift - extra;
+          // the extracted valve is lifted *out* of its canister, along the
+          // stem axis, into the space the faded cams leave behind
+          const extra = (v === A.extractValve) ? A.extractAmt * 2.6 : 0;
+          v.position.y = u.baseY - lift + extra;
         });
       });
       return bestFlash;
@@ -1148,7 +1219,7 @@
           fm.color = new THREE.Color(0x0a0d12);
           fm.metalness = .92;
           fm.roughness = .3;
-          fm.envMapIntensity = .78;
+          fm.envMapIntensity = .42;
           fm.side = THREE.FrontSide;
           o.userData.fadeMat = fm;
         }
