@@ -288,6 +288,18 @@
       mesh(shell, PU.rbox(3.2, 2.5, 11.6, .1), PU.linerMat, 0, 4.62, 0);
       mesh(shell, PU.rbox(.34, 2.55, 11.75, .1), M.cast, outerX, 4.62, 0);
       mesh(shell, PU.rbox(.3, 2.2, 11.75, .08), M.cast, innerX, 4.82, 0);
+      // valley flank: the plenum only closes the top of the V, so this wall is
+      // the largest blank the hero framing meets — ribs and a stiffener give it
+      // cast structure instead of a sheet of grey card
+      for (let i = 0; i < 3; i++) {
+        mesh(shell, PU.rbox(.2, .16, 11.45, .05), M.cast, innerX + sign * .2, 4.0 + i * .85, 0);
+      }
+      for (const z of [-3.9, 0, 3.9]) {
+        mesh(shell, PU.rbox(.22, 2.05, .24, .05), M.cast, innerX + sign * .18, 4.82, z);
+      }
+      for (const z of [-2.0, 2.0]) {
+        mesh(shell, PU.disc(.26, .12, 16), M.castDark, innerX + sign * .17, 5.55, z).rotation.z = PI / 2;
+      }
       for (const z of [-5.78, 5.78]) {
         mesh(shell, PU.rbox(3.3, 2.6, .32, .08), M.cast, 0, 4.6, z);
       }
