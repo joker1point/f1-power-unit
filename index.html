@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>2026 F1 动力单元 · 实时 3D 剖视</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+<div class="fx" aria-hidden="true"></div>
+<div id="hotspots" class="hotspots" aria-hidden="true"></div>
+
+<div id="tourFx" class="tour-fx" aria-hidden="true">
+  <svg id="tourLine" width="100%" height="100%">
+    <polyline id="tourPoly" points="" fill="none" stroke="rgba(255,59,31,.9)" stroke-width="1.4"></polyline>
+    <circle id="tourDot" r="4" fill="#ff3b1f"></circle>
+    <circle id="tourHalo" r="11" fill="rgba(255,59,31,.16)"></circle>
+  </svg>
+  <div id="tourTag" class="tour-tag">碳纤维进气箱</div>
+</div>
+
+<header class="head">
+  <p class="eyebrow"><i></i>Formula 1 · 2026 Power Unit</p>
+  <h1>1.6L V6 涡轮混合动力单元</h1>
+  <p class="sub">90° V6 · <b>单涡轮后置</b> · MGU-K 350kW · 100% 可持续燃料</p>
+  <p class="rule"><i></i>ICE 400kW + ERS 350kW = 750kW</p>
+</header>
+
+<div class="specs" aria-label="技术参数">
+  <div><span>排量</span><b>1600<em>cc</em></b></div>
+  <div><span>缸径 × 行程</span><b>80 × 53<em>mm</em></b></div>
+  <div><span>压缩比</span><b>16.0<em>:1</em></b></div>
+  <div><span>系统功率</span><b>750<em>kW</em></b></div>
+</div>
+
+<div class="tips" aria-hidden="true">
+  <span><kbd>拖拽</kbd>旋转</span>
+  <span><kbd>滚轮</kbd>缩放</span>
+  <span><kbd>右键</kbd>平移</span>
+  <span class="tipclick">点击标注定位零件</span>
+</div>
+
+<aside id="panel" class="panel" aria-label="控制面板">
+  <section class="grp">
+    <h2 class="gtitle">运转<span class="live"></span></h2>
+    <button id="runBtn" class="run on">运转中</button>
+    <div class="row"><span>演示转速</span><b id="rpmVal">620 RPM</b></div>
+    <input id="rpm" class="range" type="range" min="60" max="2400" step="20" value="620" aria-label="演示转速">
+    <p class="hint">真实上限 15000 RPM、怠速 3000 RPM。此处按比例慢放，否则活塞每秒换向 500 次无法目视。</p>
+  </section>
+
+  <section class="grp">
+    <h2 class="gtitle">透视</h2>
+    <div class="row"><span>剖视</span><b id="clipVal">0%</b></div>
+    <input id="clip" class="range" type="range" min="0" max="100" step="1" value="0" aria-label="剖视">
+    <div class="row"><span>分解</span><b id="explodeVal">0%</b></div>
+    <input id="explode" class="range" type="range" min="0" max="100" step="1" value="0" aria-label="分解">
+    <div class="btnrow">
+      <button id="xrayBtn" class="btn">X 光外壳</button>
+      <button id="aoBtn" class="btn on">环境遮蔽</button>
+    </div>
+    <div class="btnrow">
+      <button id="labelBtn" class="btn on">零件标注</button>
+    </div>
+  </section>
+
+  <section class="grp">
+    <h2 class="gtitle">视角</h2>
+    <div class="grid5">
+      <button class="btn view on" data-view="three">3/4</button>
+      <button class="btn view" data-view="side">侧视</button>
+      <button class="btn view" data-view="front">正视</button>
+      <button class="btn view" data-view="top">俯视</button>
+      <button class="btn view" data-view="rear">尾部</button>
+    </div>
+    <div class="btnrow">
+      <button id="orbitBtn" class="btn on">自动环绕</button>
+      <button id="resetBtn" class="btn">复位</button>
+    </div>
+    <button id="tourBtn" class="btn wide">▶ 自动导览 · 全零件</button>
+    <div class="row"><span>循环角</span><b id="angleVal" class="mono">000°</b></div>
+  </section>
+</aside>
+
+<button id="fold" class="fold" aria-label="展开控制面板">−</button>
+
+<div id="tour" class="tour" role="dialog" aria-label="自动导览">
+  <div class="tindex"><b id="tourIdx">01</b><span>/ 16</span></div>
+  <div class="tcopy">
+    <h3 id="tourTitle">整机 · 外部概览</h3>
+    <p id="tourSub">90° V6 · 1.6L · 单涡轮后置 · MGU-K 350kW</p>
+  </div>
+  <div class="tbtns">
+    <button id="tourPrev" aria-label="上一站">&#8249;</button>
+    <button id="tourPause" aria-label="暂停">&#10074;&#10074;</button>
+    <button id="tourNext" aria-label="下一站">&#8250;</button>
+    <button id="tourClose" aria-label="退出导览">&#10005;</button>
+  </div>
+  <div class="tbar"><i id="tourBar"></i></div>
+</div>
+
+<div id="loader">
+  <div class="spin"></div>
+  <p>Assembling Power Unit</p>
+</div>
+
+<script src="js/vendor/three.min.js"></script>
+<script src="js/build.js"></script>
+<script src="js/powerunit.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
