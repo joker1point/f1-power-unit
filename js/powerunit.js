@@ -264,18 +264,19 @@
         }
       });
       // outer ribs + bolt flange (kept proud of the wall: flush ribs vanish)
+      // NB: offsets must run along +sign x, or the inward bank swallows them
       for (let i = 0; i < 7; i++) {
-        mesh(shell, PU.rbox(.26, 2.25, .24, .05), M.cast, outerX + .24, 4.55, -5.0 + i * 1.55);
+        mesh(shell, PU.rbox(.26, 2.25, .24, .05), M.cast, outerX + sign * .24, 4.55, -5.0 + i * 1.55);
       }
-      mesh(shell, PU.rbox(.44, .26, 11.9, .05), M.castDark, outerX + .2, 3.42, 0);
-      mesh(shell, PU.rbox(.42, .22, 11.9, .05), M.castDark, outerX + .18, 5.98, 0);
+      mesh(shell, PU.rbox(.44, .26, 11.9, .05), M.castDark, outerX + sign * .2, 3.42, 0);
+      mesh(shell, PU.rbox(.42, .22, 11.9, .05), M.castDark, outerX + sign * .18, 5.98, 0);
       // block bolts
       const bl = [];
-      for (let i = 0; i < 10; i++) bl.push([outerX + .26, 3.38, -5.4 + i * 1.2, 0, 0, PI / 2]);
+      for (let i = 0; i < 10; i++) bl.push([outerX + sign * .26, 3.38, -5.4 + i * 1.2, 0, 0, PI / 2]);
       shell.add(PU.boltMesh(bl, .13, .18, M.steel));
       // casting marks / core plugs
       for (let i = 0; i < 3; i++) {
-        mesh(shell, PU.disc(.3, .12, 20), M.castDark, outerX + .22, 4.9, -3.0 + i * 3.0).rotation.z = PI / 2;
+        mesh(shell, PU.disc(.3, .12, 20), M.castDark, outerX + sign * .22, 4.9, -3.0 + i * 3.0).rotation.z = PI / 2;
       }
 
       // ---- head ----
@@ -286,7 +287,7 @@
       mesh(head, PU.rbox(3.15, .18, 11.5, .05), M.castDark, 0, 7.93, 0);
       // ribs
       for (let i = 0; i < 6; i++) {
-        mesh(head, PU.rbox(.22, 1.25, .22, .04), M.cast, outerX + .16, 7.1, -4.5 + i * 1.7);
+        mesh(head, PU.rbox(.22, 1.25, .22, .04), M.cast, outerX + sign * .16, 7.1, -4.5 + i * 1.7);
       }
       // intake port stubs on valley side
       CFG.ZS.forEach((z) => {
@@ -483,9 +484,9 @@
       ], .07, 30, 8), M.black);
       // AN fittings on outer side
       [-3.7, 0.4, 4.6].forEach((z, i) => {
-        const f = mesh(bank, cylZ(.1, .34, 10), i === 1 ? M.orange : M.red, outerX + .28, 5.35, z);
+        const f = mesh(bank, cylZ(.1, .34, 10), i === 1 ? M.orange : M.red, outerX + sign * .28, 5.35, z);
         f.rotation.z = PI / 2;
-        mesh(bank, PU.disc(.18, .16, 6), M.machined, outerX + .18, 5.35, z).rotation.z = PI / 2;
+        mesh(bank, PU.disc(.18, .16, 6), M.machined, outerX + sign * .18, 5.35, z).rotation.z = PI / 2;
       });
 
       /* ---- pistons, rods ---- */
@@ -607,6 +608,8 @@
         st.rotation.z = -bx * .14;
         const m = mesh(st, stackGeo, M.alu, 0, 0, 0);
         m.material.side = THREE.DoubleSide;
+        // dark throat: a plain polished lathe reads as a sheet-metal funnel
+        mesh(st, PU.lathe([[.34, 0], [.38, .58], [.41, 1.2], [.53, 1.6], [.68, 1.84]], 30), M.black, 0, .02, 0);
         mesh(st, PU.lathe([[.4, 0], [.36, .12], [.4, .3], [.44, .42]], 28), M.castDark, 0, 0, 0);
         // throttle body
         mesh(st, PU.cyl(.5, .5, .36, 26), M.castDark, 0, -.18, 0);

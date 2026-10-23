@@ -321,9 +321,9 @@
     TE.normFoil = tex(normalCanvas(noiseCanvas(256, [8, 16, 32, 64], 128, 235), 2.4), 3, 3, false);
 
     M.cast = new THREE.MeshStandardMaterial({
-      color: 0xaeb6be, map: TE.cast, bumpMap: TE.castB, bumpScale: .012,
+      color: 0xa4adb6, map: TE.cast, bumpMap: TE.castB, bumpScale: .012,
       roughnessMap: TE.rough, normalMap: TE.norm, normalScale: new THREE.Vector2(.42, .42),
-      metalness: .6, roughness: .52, envMapIntensity: 1.05
+      metalness: .58, roughness: .56, envMapIntensity: .95
     });
     M.castDark = new THREE.MeshStandardMaterial({
       color: 0x767e86, map: TE.cast,
@@ -331,9 +331,9 @@
       metalness: .55, roughness: .62, envMapIntensity: .8
     });
     M.castLight = new THREE.MeshStandardMaterial({
-      color: 0xc0c8cf, map: TE.cast,
+      color: 0xb4bdc5, map: TE.cast,
       roughnessMap: TE.rough, normalMap: TE.norm, normalScale: new THREE.Vector2(.34, .34),
-      metalness: .55, roughness: .48, envMapIntensity: 1.12
+      metalness: .52, roughness: .52, envMapIntensity: 1.0
     });
     M.mag = new THREE.MeshStandardMaterial({
       color: 0x8d949b, map: TE.cast,
@@ -343,7 +343,7 @@
     M.machined = new THREE.MeshStandardMaterial({
       color: 0xc4cbd2, map: TE.brush, bumpMap: TE.brush, bumpScale: .004,
       roughnessMap: TE.roughFine, normalMap: TE.normFine, normalScale: new THREE.Vector2(.2, .2),
-      metalness: .84, roughness: .34, envMapIntensity: 1.3
+      metalness: .82, roughness: .36, envMapIntensity: 1.2
     });
     M.lid = new THREE.MeshStandardMaterial({
       color: 0xb9c1c9, map: TE.brush, bumpMap: TE.brush, bumpScale: .005,
