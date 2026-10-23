@@ -61,22 +61,19 @@
 
   function carbonCanvas() {
     const s = 512, c = cnv(s), x = c.getContext('2d');
-    x.fillStyle = '#1b1e22'; x.fillRect(0, 0, s, s);
-    const n = 16, cell = s / n;
+    x.fillStyle = '#20242a'; x.fillRect(0, 0, s, s);
+    const n = 40, cell = s / n;
     for (let j = 0; j < n; j++) {
       for (let i = 0; i < n; i++) {
         const over = ((i + j) % 4) < 2;
         const g = x.createLinearGradient(i * cell, j * cell, (i + 1) * cell, (j + 1) * cell);
         if (over) {
-          g.addColorStop(0, '#3a4046'); g.addColorStop(.45, '#565d64'); g.addColorStop(.55, '#31363b'); g.addColorStop(1, '#23272b');
+          g.addColorStop(0, '#343a41'); g.addColorStop(.5, '#464d55'); g.addColorStop(1, '#282d32');
         } else {
-          g.addColorStop(0, '#23272b'); g.addColorStop(.45, '#3e444a'); g.addColorStop(.55, '#22262a'); g.addColorStop(1, '#191c1f');
+          g.addColorStop(0, '#24282d'); g.addColorStop(.5, '#323840'); g.addColorStop(1, '#1d2125');
         }
         x.fillStyle = g;
-        x.fillRect(i * cell, j * cell, cell - .6, cell - .6);
-        x.strokeStyle = 'rgba(0,0,0,.35)';
-        x.lineWidth = .8;
-        x.strokeRect(i * cell, j * cell, cell, cell);
+        x.fillRect(i * cell, j * cell, cell - .5, cell - .5);
       }
     }
     return c;
@@ -100,7 +97,7 @@
     }
     const img = x.getImageData(0, 0, s, s), d = img.data;
     for (let i = 0; i < d.length; i += 4) {
-      const nn = (Math.random() - .5) * 18;
+      const nn = (Math.random() - .5) * 9;
       d[i] += nn; d[i + 1] += nn; d[i + 2] += nn;
     }
     x.putImageData(img, 0, 0);
@@ -157,8 +154,8 @@
       bevelEnabled: b > .004,
       bevelThickness: b,
       bevelSize: b,
-      bevelSegments: 2,
-      curveSegments: 5,
+      bevelSegments: 3,
+      curveSegments: 10,
       steps: 1
     });
     geo.center();
@@ -233,9 +230,9 @@
     TE.cast = tex(castCanvas(), 3, 3, true);
     TE.castB = tex(castCanvas(), 3, 3, false);
     TE.brush = tex(brushCanvas(), 2, 2, true);
-    TE.carbon = tex(carbonCanvas(), 1.25, 1.25, true);
-    TE.wrap = tex(wrapCanvas(), 2, 2, true);
-    TE.wrapB = tex(wrapCanvas(), 2, 2, false);
+    TE.carbon = tex(carbonCanvas(), 2.2, 2.2, true);
+    TE.wrap = tex(wrapCanvas(), 5, 2, true);
+    TE.wrapB = tex(wrapCanvas(), 5, 2, false);
     TE.foil = tex(foilCanvas(), 3, 3, true);
     TE.rubber = tex(rubberCanvas(), 3, 3, true);
 
@@ -277,15 +274,19 @@
       color: 0x4a5158, map: TE.carbon, metalness: .18, roughness: .6, envMapIntensity: 1.1
     });
     M.wrap = new THREE.MeshStandardMaterial({
-      color: 0x858884, map: TE.wrap, bumpMap: TE.wrapB, bumpScale: .03,
-      metalness: .42, roughness: .92, envMapIntensity: .45
+      color: 0xb2b6b3, map: TE.wrap, bumpMap: TE.wrapB, bumpScale: .015,
+      metalness: .58, roughness: .60, envMapIntensity: 1.05
+    });
+    M.wrapHot = new THREE.MeshStandardMaterial({
+      color: 0x9e9284, map: TE.wrap, bumpMap: TE.wrapB, bumpScale: .015,
+      metalness: .7, roughness: .5, envMapIntensity: 1.15
     });
     M.gold = new THREE.MeshStandardMaterial({
-      color: 0x83601a, map: TE.foil, bumpMap: TE.foil, bumpScale: .012,
-      metalness: .95, roughness: .45, envMapIntensity: 1.35, side: THREE.DoubleSide
+      color: 0xfff2d4, map: TE.foil, bumpMap: TE.foil, bumpScale: .012,
+      metalness: .95, roughness: .38, envMapIntensity: 1.5, side: THREE.DoubleSide
     });
     M.inconel = new THREE.MeshStandardMaterial({
-      color: 0x646b72, metalness: .88, roughness: .54, envMapIntensity: .95
+      color: 0x8b9198, metalness: .88, roughness: .45, envMapIntensity: 1.2
     });
     M.heatTint = new THREE.MeshStandardMaterial({
       color: 0x6b5c48, metalness: .88, roughness: .48, envMapIntensity: 1

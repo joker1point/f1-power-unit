@@ -276,8 +276,12 @@
         mesh(cover, tubeZ([[sign * 1.75, 8.72, fz], [sign * 1.9, 8.55, fz + .3], [sign * 1.95, 8.2, fz + .6]], .055, 14, 7), M.rubber);
       }
       // gold heat shield on exhaust side of head
-      mesh(head, PU.rbox(.05, .75, 4.3, .02), M.gold, outerX + sign * .22, 6.45, -1.6);
-      mesh(head, PU.rbox(.05, .55, 1.5, .02), M.gold, outerX + sign * .24, 6.3, 3.6);
+      mesh(head, PU.rbox(.14, .78, 4.32, .05), M.gold, outerX + sign * .1, 6.45, -1.6);
+      mesh(head, PU.rbox(.14, .58, 1.52, .05), M.gold, outerX + sign * .12, 6.3, 3.6);
+      const shb = [];
+      for (let i = 0; i < 5; i++) shb.push([outerX + sign * .19, 6.45, -3.2 + i * .8, 0, 0, PI / 2]);
+      for (let i = 0; i < 2; i++) shb.push([outerX + sign * .22, 6.3, 3.2 + i * .8, 0, 0, PI / 2]);
+      head.add(PU.boltMesh(shb, .07, .08, M.machined));
       const cl = [];
       for (let i = 0; i < 9; i++) {
         cl.push([1.42 * sign, 9.02, -5.0 + i * 1.25, 0, 0, PI / 2]);
@@ -571,25 +575,44 @@
     const exhaustG = grp(root, 'exhaust');
     A.fadeGroups.exhaust = null;
     const primaries = [];
-    const wrapPipe = (pts, r) => {
-      const curve = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(p[0], p[1], p[2])));
-      const pg = new THREE.TubeGeometry(curve, 46, r, 16, false);
-      const pm = mesh(exhaustG, pg, M.wrap);
-      // fabric band clamps along the run
-      [.24, .46, .68, .88].forEach(t => {
-        const p = curve.getPointAt(t);
-        const tan = curve.getTangentAt(t);
-        const ring = new THREE.Mesh(new THREE.TorusGeometry(r + .035, .032, 6, 18), M.machined);
+
+    // a blanket that follows the exact same spline as the pipe it covers,
+    // so the sleeve can never drift off the pipe and show a seam
+    const sleeveOn = (curve, t0, t1, r, mat, seg) => {
+      const n = 16, pp = [];
+      for (let i = 0; i <= n; i++) pp.push(curve.getPointAt(t0 + (t1 - t0) * i / n));
+      const c2 = new THREE.CatmullRomCurve3(pp);
+      const m = mesh(exhaustG, new THREE.TubeGeometry(c2, seg || 30, r, 16, false), mat);
+      // crimped ends so the blanket reads as folded fabric, not a floating cone
+      [0, 1].forEach((k) => {
+        const p = c2.getPointAt(k), tan = c2.getTangentAt(k);
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(r + .012, .04, 8, 20), mat);
         ring.position.copy(p);
         ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), tan);
         ring.castShadow = true; ring.receiveShadow = true;
         exhaustG.add(ring);
       });
-      return pm;
+      return m;
+    };
+
+    const wrapPipe = (pts, r) => {
+      const curve = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(p[0], p[1], p[2])));
+      const pm = mesh(exhaustG, new THREE.TubeGeometry(curve, 52, r, 18, false), M.wrap);
+      // fabric band clamps along the run
+      [.34, .62, .86].forEach(t => {
+        const p = curve.getPointAt(t);
+        const tan = curve.getTangentAt(t);
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(r + .026, .026, 6, 20), M.machined);
+        ring.position.copy(p);
+        ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), tan);
+        ring.castShadow = true; ring.receiveShadow = true;
+        exhaustG.add(ring);
+      });
+      return { mesh: pm, curve: curve };
     };
     [-1, 1].forEach((sx) => {
       // sx=-1: left bank outer face; sx=+1 right bank
-      CFG.ZS.forEach((z, i) => {
+      CFG.ZS.forEach((z) => {
         const x0 = sx * 6.05;
         const y0 = 3.72;
         const pts = [
@@ -599,18 +622,26 @@
           [x0 + sx * 1.05, y0 - 2.15, z + 1.5],
           [sx * 5.6, y0 - 2.35, 5.05]
         ];
-        const p = wrapPipe(pts, .3);
-        primaries.push(p);
-        // gold heat shield sleeve on the hot end
-        mesh(exhaustG, tubeZ([pts[0], pts[1], pts[2]], .33, 22, 14), M.gold, 0, 0, 0);
-        // flange at head
-        mesh(exhaustG, PU.rbox(.5, .62, .8, .08), M.heatTint, x0 - sx * .18, y0, z);
+        const built = wrapPipe(pts, .3);
+        primaries.push(built.mesh);
+        // gold blanket hugging the hot end of the primary
+        sleeveOn(built.curve, .01, .33, .327, M.gold, 24);
+        // port flange, squared to the pipe axis instead of floating as a slab
+        const t0 = built.curve.getTangentAt(0);
+        const q0 = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), t0);
+        const fl = mesh(exhaustG, PU.rbox(.62, .54, .1, .04), M.darkSteel, pts[0][0], pts[0][1], pts[0][2]);
+        fl.quaternion.copy(q0);
+        const collar = mesh(exhaustG, cylZ(.335, .12, 20), M.heatTint, pts[0][0], pts[0][1], pts[0][2]);
+        collar.quaternion.copy(q0);
       });
     });
-    // collector
-    const col = mesh(exhaustG, new THREE.CylinderGeometry(1.2, .62, 2.3, 30), M.wrap, -5.6, 1.55, 4.35);
+    // collector cone — inconel, not fabric
+    const col = mesh(exhaustG, new THREE.CylinderGeometry(1.2, .62, 2.3, 34), M.inconel, -5.6, 1.55, 4.35);
     col.rotation.x = PI / 2.6; col.rotation.z = .12;
-    mesh(exhaustG, new THREE.TorusGeometry(1.18, .09, 10, 30), M.machined, -5.6, 1.72, 5.5).rotation.x = .35;
+    mesh(exhaustG, new THREE.TorusGeometry(1.18, .085, 10, 32), M.heatTint, -5.6, 1.72, 5.5).rotation.x = .35;
+    mesh(exhaustG, new THREE.TorusGeometry(.98, .07, 10, 32), M.machined, -5.97, .42, 3.2).rotation.x = -.42;
+    // gold blanket strap across the collector
+    mesh(exhaustG, PU.rbox(1.55, .05, .95, .03), M.gold, -5.62, 2.62, 4.5).rotation.z = .1;
     // merge collector body + lambda sensor + heat shield
     const merge = grp(exhaustG, 'merge-collector');
     merge.position.set(-5.7, 1.36, 5.02);
@@ -628,11 +659,13 @@
       [-5.5, 1.3, 5.5], [-5.0, 1.6, 6.5], [-4.4, 2.2, 7.3], [-3.9, 2.7, 7.6]
     ], .46, 30, 12), M.heatTint);
     // turbine downpipe + GPF canister
-    const gpfZ = -2.4;
-    mesh(exhaustG, tubeZ([
+    const downPts = [
       [-3.2, 1.7, 8.6], [-3.9, -.4, 9.0], [-5.0, -1.5, 8.2], [-6.1, -1.75, 6.2],
       [-6.55, -1.8, 2.8], [-6.6, -1.85, -.2]
-    ], .55, 46, 14), M.inconel);
+    ];
+    const downCurve = new THREE.CatmullRomCurve3(downPts.map(p => new THREE.Vector3(p[0], p[1], p[2])));
+    mesh(exhaustG, new THREE.TubeGeometry(downCurve, 64, .55, 20, false), M.inconel);
+    sleeveOn(downCurve, .01, .16, .578, M.gold, 18);
     const can = grp(exhaustG, 'gpf');
     can.scale.setScalar(.86);
     mesh(can, cylZ(1.35, 2.8, 40), M.inconel, 0, 0, 0);
