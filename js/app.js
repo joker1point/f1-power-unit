@@ -16,7 +16,7 @@
   const renderer = new THREE.WebGLRenderer({
     canvas: canvas, antialias: true, alpha: true, powerPreference: 'high-performance'
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -33,10 +33,13 @@
   /* ---------------- ground & light ---------------- */
   const floor = new THREE.Mesh(
     new THREE.CircleGeometry(40, 96),
-    new THREE.MeshBasicMaterial({ map: PU.floorTexture(), toneMapped: false })
+    new THREE.MeshBasicMaterial({
+      map: PU.floorTexture(), transparent: true, depthWrite: false, toneMapped: false
+    })
   );
   floor.rotation.x = -PI / 2;
   floor.position.y = -4.3;
+  floor.renderOrder = -2;
   scene.add(floor);
 
   const shadowFloor = new THREE.Mesh(
@@ -46,6 +49,7 @@
   shadowFloor.rotation.x = -PI / 2;
   shadowFloor.position.y = -4.29;
   shadowFloor.receiveShadow = true;
+  shadowFloor.renderOrder = -1;
   scene.add(shadowFloor);
 
   const ringMat = new THREE.MeshBasicMaterial({ color: 0x2b323b, toneMapped: false });
@@ -106,7 +110,7 @@
   contact.scale.set(1.05, 1, 1);
 
   /* ---------------- camera state ---------------- */
-  const W0 = -2.2, P0 = 1.24;
+  const W0 = -2.55, P0 = 1.26;
   const cam = {
     theta: W0, phi: P0, radius: 49,
     target: new THREE.Vector3(0, 3.35, 0),
@@ -119,14 +123,14 @@
   function fitRadius() {
     const vf = camera.fov * PI / 180;
     const portrait = camera.aspect < 1;
-    const R = portrait ? 10.6 : 13.2;
+    const R = portrait ? 10.6 : 12.1;
     const dV = R / Math.sin(vf / 2);
     const dH = R / (Math.tan(vf / 2) * camera.aspect);
     return Math.max(dV, dH) * (portrait ? .92 : 1);
   }
 
   function homeTarget() {
-    return new THREE.Vector3(0, camera.aspect < 1 ? 2.6 : 3.35, 0);
+    return new THREE.Vector3(0, camera.aspect < 1 ? 2.6 : 3.2, 0);
   }
 
   function baseCamera() {
@@ -326,7 +330,7 @@
   });
 
   const views = {
-    three: { theta: W0, phi: 1.22, zoom: 1, target: [0, 3.35, 0] },
+    three: { theta: W0, phi: 1.26, zoom: 1, target: [0, 3.2, 0] },
     side: { theta: -PI / 2, phi: 1.50, zoom: .66, target: [0, 3.1, 0] },
     front: { theta: PI, phi: 1.44, zoom: .54, target: [0, 3.0, .2] },
     top: { theta: -.6, phi: .40, zoom: .70, target: [0, 3.8, 0] },
@@ -585,7 +589,7 @@
   const V = (th, ph, zm, tx, ty, tz) => ({ theta: th, phi: ph, zoom: zm, target: [tx, ty, tz] });
 
   const TOUR = [
-    { t: '整机 · 外部概览', s: '90° V6 · 1.6L · 单涡轮后置 · MGU-K 350kW', tag: '碳纤维进气箱', at: 'plenum', view: V(W0, 1.22, 1, 0, 3.35, 0), clip: 0, exp: 0, rpm: 620, fades: {}, dwell: 5200 },
+    { t: '整机 · 外部概览', s: '90° V6 · 1.6L · 单涡轮后置 · MGU-K 350kW', tag: '碳纤维进气箱', at: 'plenum', view: V(W0, 1.26, 1, 0, 3.2, 0), clip: 0, exp: 0, rpm: 620, fades: {}, dwell: 5200 },
     { t: '碳纤维进气箱', s: '单一大碳罩 · 覆盖整个 V 谷 · 下面几站会把罩壳变透明', tag: '碳纤维进气箱', at: 'plenum', view: V(-2.25, .95, .46, 0, 8.9, -1.0), clip: 0, exp: 0, rpm: 620, fades: {}, dwell: 5000 },
     { t: '六个喇叭口', s: '规则禁止可变长度进气 · 固定喇叭口 + 独立节气门 · 罩壳已淡出', tag: '喇叭口 ×6', at: 'stack', view: V(-2.1, 1.0, .34, 0, 7.5, -1.4), clip: 0, exp: .04, rpm: 300, fades: { plenum: .07 }, dwell: 5200 },
     { t: '双凸轮轴 · DOHC', s: '每缸 4 气门 · 气动回位（无金属弹簧）· 气门室盖已淡出', tag: '凸轮轴', at: 'cam', view: V(-2.5, 1.05, .28, -4.2, 6.1, -1.0), clip: 0, exp: .04, rpm: 240, fades: { coverL: .05, coverR: .12 }, dwell: 5400 },
@@ -600,7 +604,7 @@
     { t: '正时传动 · 前端', s: '曲轴齿轮 → 惰轮 → 双凸轮轴齿轮 · 碳纤维正时罩已淡出', tag: '正时罩', at: 'timingL', view: V(-2.95, 1.2, .22, -1.2, 2.3, -5.8), clip: 0, exp: .22, rpm: 80, fades: { timing: .05 }, dwell: 5400 },
     { t: '分解 · 装配关系', s: '气门室盖 → 缸盖 → 活塞连杆 → 缸体 → 曲轴 → 油底壳', tag: '气门室盖', at: 'coverL', view: V(-2.35, 1.14, 1.04, 0, 3.6, 0), clip: 0, exp: 1, rpm: 0, fades: {}, dwell: 6000 },
     { t: '全零件图解', s: '分解到底 · 每个部件的名称直接标在图上 · 曲轴已停转', tag: null, at: null, view: V(-PI / 2, 1.1, .92, 0, 3.4, 0), clip: 0, exp: 1, rpm: 0, fades: {}, dwell: 13000, diagram: true },
-    { t: '回到整机', s: '循环播放 · 空格暂停 · ← → 切换 · Esc 退出', tag: '进气箱', at: 'plenum', view: V(W0, 1.22, 1, 0, 3.35, 0), clip: 0, exp: 0, rpm: 620, fades: {}, dwell: 4600 }
+    { t: '回到整机', s: '循环播放 · 空格暂停 · ← → 切换 · Esc 退出', tag: '进气箱', at: 'plenum', view: V(W0, 1.26, 1, 0, 3.2, 0), clip: 0, exp: 0, rpm: 620, fades: {}, dwell: 4600 }
   ];
 
   const tour = { active: false, i: 0, paused: false, t: 0, save: null };
@@ -807,7 +811,7 @@
 
     angleVal.textContent = String(Math.round(((state.crank * 180 / PI) % 720 + 720) % 720)).padStart(3, '0') + '°';
 
-    if (frame % 6 === 0) renderer.shadowMap.needsUpdate = true;
+    if (frame % 8 === 0) renderer.shadowMap.needsUpdate = true;
     post.render();
 
     if (firstFrame) {

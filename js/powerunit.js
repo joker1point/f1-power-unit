@@ -119,6 +119,8 @@
     }
     mesh(fly, PU.disc(2.1, .16, 40), M.castDark, 0, 0, 6.98).rotation.x = PI / 2;
     mesh(fly, PU.disc(.85, .4, 28), M.machined, 0, 0, 7.18).rotation.x = PI / 2;
+    mesh(fly, PU.gear(2.48, 46, .13, 1.62), M.steel, 0, 0, 7.04);
+    mesh(fly, PU.disc(.34, .5, 18), M.machined, 0, 0, 7.32).rotation.x = PI / 2;
     for (let i = 0; i < 12; i++) {
       const a = i / 12 * TAU;
       mesh(fly, PU.disc(.08, .18, 8), M.steel, Math.cos(a) * 2.25, Math.sin(a) * 2.25, 6.0).rotation.x = PI / 2;
@@ -283,15 +285,32 @@
       }
       cover.add(PU.boltMesh(cl, .11, .14, M.machined));
       // oil filler + breather
-      const cap = mesh(cover, PU.disc(.34, .22, 22), M.machined, .6 * sign, 9.3, -4.7);
+      mesh(cover, PU.cyl(.24, .27, .3, 20), M.castDark, .72 * sign, 9.38, -4.7);
+      const cap = mesh(cover, PU.disc(.34, .2, 22), M.machined, .72 * sign, 9.6, -4.7);
       mesh(cap, new THREE.TorusGeometry(.35, .04, 6, 22), M.cast, 0, 0, 0).rotation.x = PI / 2;
+      mesh(cap, new THREE.TorusGeometry(.2, .025, 5, 18), M.black, 0, .1, 0).rotation.x = PI / 2;
       mesh(cover, cylZ(.17, .55, 14), M.darkSteel, -.85 * sign, 9.22, -4.4);
       mesh(cover, cylZ(.13, .7, 12), M.black, -.85 * sign, 9.22, 4.5);
-      // ignition coils on top of cover
-      CFG.ZS.forEach((z, i) => {
-        const c = mesh(cover, PU.cyl(.16, .12, .55, 16), M.black, -.45 * sign, 9.32, z);
-        mesh(c, PU.disc(.1, .12, 12), M.orange, 0, .3, 0);
-        mesh(cover, PU.rbox(.4, .14, .55, .05), M.darkSteel, -.15 * sign, 9.22, z);
+      mesh(cover, tubeZ([
+        [-.85 * sign, 9.22, 4.6], [-.95 * sign, 9.05, 5.0], [-1.2 * sign, 8.7, 5.2], [-1.3 * sign, 8.2, 5.0]
+      ], .07, 22, 8), M.rubber);
+      mesh(cover, tubeZ([
+        [-.85 * sign, 9.22, -4.5], [-.95 * sign, 9.4, -5.0], [-.9 * sign, 9.55, -5.3]
+      ], .06, 18, 8), M.rubber);
+      // cam position sensor
+      mesh(cover, cylZ(.11, .32, 12), M.darkSteel, .95 * sign, 8.72, -5.82);
+      mesh(cover, PU.rbox(.24, .2, .22, .04), M.black, .95 * sign, 8.72, -6.02);
+      mesh(cover, tubeZ([[.95 * sign, 8.72, -6.0], [.8 * sign, 8.95, -5.6], [.5 * sign, 9.2, -5.2]], .035, 14, 6), M.black);
+      // ignition coils
+      CFG.ZS.forEach((z) => {
+        mesh(cover, PU.rbox(.36, .16, .4, .05), M.darkSteel, -.42 * sign, 9.26, z);
+        const c = mesh(cover, PU.cyl(.15, .13, .5, 16), M.black, -.42 * sign, 9.55, z);
+        mesh(c, PU.disc(.115, .16, 12), M.orange, 0, -.27, 0);
+        mesh(cover, PU.rbox(.28, .22, .3, .04), M.black, -.42 * sign, 9.85, z);
+        mesh(cover, new THREE.TorusGeometry(.15, .025, 6, 16), M.orange, -.42 * sign, 9.78, z).rotation.x = PI / 2;
+        mesh(cover, tubeZ([
+          [-.42 * sign, 9.86, z], [-.62 * sign, 9.8, z + .2], [-.8 * sign, 9.62, z + .35], [-.95 * sign, 9.4, z + .5]
+        ], .035, 16, 6), M.black);
       });
 
       // ---- camshafts ----
@@ -477,8 +496,15 @@
     const plenum = grp(intakeG, 'plenum');
     A.fadeGroups.plenum = plenum;
     mesh(plenum, PU.rbox(6.2, 2.2, 11.3, .72), M.carbon, 0, 8.9, 0);
-    mesh(plenum, PU.rbox(4.1, .5, 10.2, .24), M.carbon, 0, 10.0, .1);
+    mesh(plenum, PU.rbox(4.1, .5, 10.2, .24), M.lid, 0, 10.0, .1);
     mesh(plenum, PU.rbox(4.14, .14, 10.24, .05), M.carbonMatte, 0, 10.23, .1);
+    // raised centre rib + fasteners on the lid
+    mesh(plenum, PU.rbox(.9, .1, 9.2, .14), M.machined, 0, 10.29, .1);
+    const lidBolts = [];
+    for (let i = 0; i < 6; i++) {
+      for (const sx of [-1, 1]) lidBolts.push([sx * 1.72, 10.31, -4.1 + i * 1.68]);
+    }
+    plenum.add(PU.boltMesh(lidBolts, .075, .11, M.darkSteel));
     mesh(plenum, PU.rbox(6.24, .12, 11.34, .04), M.black, 0, 7.83, 0);
     // ribs on plenum shoulder
     for (let i = 0; i < 7; i++) {
@@ -585,6 +611,18 @@
     const col = mesh(exhaustG, new THREE.CylinderGeometry(1.2, .62, 2.3, 30), M.wrap, -5.6, 1.55, 4.35);
     col.rotation.x = PI / 2.6; col.rotation.z = .12;
     mesh(exhaustG, new THREE.TorusGeometry(1.18, .09, 10, 30), M.machined, -5.6, 1.72, 5.5).rotation.x = .35;
+    // merge collector body + lambda sensor + heat shield
+    const merge = grp(exhaustG, 'merge-collector');
+    merge.position.set(-5.7, 1.36, 5.02);
+    mesh(merge, PU.rbox(1.6, 1.15, 1.2, .22), M.heatTint, 0, 0, 0);
+    mesh(merge, PU.rbox(1.68, .07, 1.3, .04), M.gold, 0, .6, 0);
+    const lb = mesh(merge, PU.cyl(.16, .16, .52, 14), M.machined, .62, .35, -.12);
+    lb.rotation.z = PI / 2;
+    mesh(merge, PU.disc(.2, .12, 6), M.gold, .86, .35, -.12).rotation.z = PI / 2;
+    mesh(merge, tubeZ([[.9, .35, -.12], [1.2, .42, .1], [1.45, .6, .45]], .035, 14, 6), M.black);
+    for (const yy of [-.32, 0, .32]) {
+      mesh(merge, new THREE.TorusGeometry(.2, .032, 6, 16), M.machined, -.82, yy, 0).rotation.y = PI / 2;
+    }
     // collector -> turbine
     mesh(exhaustG, tubeZ([
       [-5.5, 1.3, 5.5], [-5.0, 1.6, 6.5], [-4.4, 2.2, 7.3], [-3.9, 2.7, 7.6]
@@ -631,6 +669,22 @@
     // compressor inlet trumpet
     mesh(turboG, PU.lathe([[.95, 0], [.88, .18], [.72, .55], [.62, .82], [.66, .98], [.55, .9], [.5, .55], [.55, .1]], 32), M.machined, 0, 0, 1.7);
     mesh(turboG, new THREE.TorusGeometry(.66, .09, 8, 26), M.darkSteel, 0, 0, 1.72);
+    // compressor wheel inside the inlet
+    const wheel = grp(turboG, 'comp-wheel');
+    wheel.position.set(0, 0, 1.45);
+    mesh(wheel, PU.disc(.52, .08, 28), M.machined).rotation.x = PI / 2;
+    for (let i = 0; i < 9; i++) {
+      const a = i / 9 * TAU;
+      const b = mesh(wheel, PU.rbox(.055, .34, .38, .02), M.machined);
+      b.position.set(Math.cos(a) * .3, Math.sin(a) * .3, 0);
+      b.rotation.z = a;
+      b.rotation.x = .55;
+    }
+    mesh(wheel, PU.disc(.12, .16, 12), M.steel, 0, 0, .1).rotation.x = PI / 2;
+    // gold turbine blanket
+    const blanket = new THREE.CylinderGeometry(1.58, 1.58, 1.3, 28, 1, true, .2, PI * 1.08);
+    blanket.rotateX(PI / 2);
+    mesh(turboG, blanket, M.gold, 0, .08, -.72);
     // wastegate
     mesh(turboG, PU.cyl(.34, .34, .8, 18), M.castDark, 1.0, .82, .1);
     mesh(turboG, PU.disc(.2, .7, 14), M.machined, 1.0, 1.42, .1);
@@ -695,6 +749,16 @@
     mesh(tcover, tgeo, M.carbon, 0, 1.35, -6.4);
     mesh(tcover, PU.rbox(1.5, 1.1, .3, .12), M.castDark, 0, 1.2, -6.68);
     mesh(tcover, PU.disc(.38, .2, 20), M.machined, 0, 1.2, -6.86).rotation.x = PI / 2;
+    // V6 badge plate
+    mesh(tcover, PU.rbox(1.5, .58, .06, .06), M.machined, 0, 2.72, -6.6);
+    const badge = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.36, .5),
+      new THREE.MeshStandardMaterial({ map: PU.badgeTexture(), metalness: .45, roughness: .48 })
+    );
+    badge.position.set(0, 2.72, -6.64);
+    badge.rotation.y = PI;
+    badge.receiveShadow = true;
+    tcover.add(badge);
     for (let i = 0; i < 10; i++) {
       const a = i / 10 * TAU;
       mesh(tcover, PU.disc(.06, .1, 6), M.steel, Math.cos(a) * .5, 1.2 + Math.sin(a) * .5, -6.87).rotation.x = PI / 2;

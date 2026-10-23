@@ -233,7 +233,7 @@
     TE.cast = tex(castCanvas(), 3, 3, true);
     TE.castB = tex(castCanvas(), 3, 3, false);
     TE.brush = tex(brushCanvas(), 2, 2, true);
-    TE.carbon = tex(carbonCanvas(), 5, 5, true);
+    TE.carbon = tex(carbonCanvas(), 1.25, 1.25, true);
     TE.wrap = tex(wrapCanvas(), 2, 2, true);
     TE.wrapB = tex(wrapCanvas(), 2, 2, false);
     TE.foil = tex(foilCanvas(), 3, 3, true);
@@ -255,6 +255,10 @@
     M.machined = new THREE.MeshStandardMaterial({
       color: 0xc4cbd2, map: TE.brush, bumpMap: TE.brush, bumpScale: .004,
       metalness: .92, roughness: .24, envMapIntensity: 1.4
+    });
+    M.lid = new THREE.MeshStandardMaterial({
+      color: 0xb9c1c9, map: TE.brush, bumpMap: TE.brush, bumpScale: .005,
+      metalness: .86, roughness: .3, envMapIntensity: 1.45
     });
     M.titan = new THREE.MeshStandardMaterial({
       color: 0x9aa2a9, metalness: .82, roughness: .38, envMapIntensity: 1.2
@@ -310,7 +314,7 @@
     M.emissive = new THREE.MeshBasicMaterial({ color: 0xffb066 });
 
     // housing materials that x-ray / clipping are allowed to touch
-    PU.shellMats = [M.cast, M.castDark, M.castLight, M.mag, M.carbon, M.carbonMatte];
+    PU.shellMats = [M.cast, M.castDark, M.castLight, M.mag, M.carbon, M.carbonMatte, M.lid];
   };
 
   /* ---------------- studio environment ---------------- */
@@ -376,14 +380,50 @@
 
   PU.floorTexture = function () {
     const s = 512, c = cnv(s), x = c.getContext('2d');
-    const g = x.createRadialGradient(s * .5, s * .46, s * .04, s * .5, s * .5, s * .56);
-    g.addColorStop(0, '#191d23');
-    g.addColorStop(.32, '#111419');
-    g.addColorStop(.7, '#080a0d');
-    g.addColorStop(1, '#040507');
+    x.clearRect(0, 0, s, s);
+    const g = x.createRadialGradient(s * .5, s * .46, s * .04, s * .5, s * .5, s * .52);
+    g.addColorStop(0, 'rgba(25,29,35,1)');
+    g.addColorStop(.30, 'rgba(17,20,25,1)');
+    g.addColorStop(.60, 'rgba(8,10,13,.96)');
+    g.addColorStop(.82, 'rgba(4,5,7,.62)');
+    g.addColorStop(.93, 'rgba(3,4,5,.24)');
+    g.addColorStop(1, 'rgba(2,3,4,0)');
     x.fillStyle = g; x.fillRect(0, 0, s, s);
     const t = new THREE.CanvasTexture(c);
     t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  };
+
+  PU.badgeTexture = function () {
+    const w = 512, h = 192;
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const x = c.getContext('2d');
+    const g = x.createLinearGradient(0, 0, w, h);
+    g.addColorStop(0, '#23272c');
+    g.addColorStop(.45, '#48505a');
+    g.addColorStop(1, '#1c2024');
+    x.fillStyle = g; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 220; i++) {
+      x.strokeStyle = 'rgba(255,255,255,' + rnd(.015, .05) + ')';
+      x.lineWidth = 1;
+      const y = rnd(0, h);
+      x.beginPath(); x.moveTo(rnd(0, w), y); x.lineTo(rnd(0, w), y); x.stroke();
+    }
+    x.strokeStyle = 'rgba(220,230,242,.55)';
+    x.lineWidth = 3;
+    x.strokeRect(7, 7, w - 14, h - 14);
+    x.fillStyle = '#e8eef6';
+    x.font = '700 86px Inter, Arial, sans-serif';
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText('V6', w / 2, h / 2 - 18);
+    x.fillStyle = '#ff3b1f';
+    x.fillRect(w / 2 - 34, h / 2 + 24, 68, 3);
+    x.fillStyle = '#aab4c0';
+    x.font = '500 25px Inter, Arial, sans-serif';
+    x.fillText('1.6 TURBO HYBRID', w / 2, h / 2 + 55);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 8;
     return t;
   };
 })();
