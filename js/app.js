@@ -560,6 +560,166 @@
     h.el = el;
   });
 
+  /* ---------------- diagram callouts ----------------
+     The exploded stack throws every anchor into one narrow diagonal band, so
+     pinning ten pills to them guaranteed a pile. Wide screens push the names
+     out into two margin columns with a leader line each, the way a printed
+     exploded drawing is lettered; phones have no margin to spare, so the parts
+     take a number and the names go into a legend strip under the model.     */
+  const calloutLayer = $('#callouts');
+  const calloutSvg = $('#calloutSvg');
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const callouts = [];
+  hotspots.forEach(h => {
+    if (!h.diagram) return;
+    const el = document.createElement('div');
+    el.className = 'cl-label';
+    el.textContent = h.label;
+    calloutLayer.appendChild(el);
+    const g = document.createElementNS(SVGNS, 'g');
+    const halo = document.createElementNS(SVGNS, 'circle');
+    halo.setAttribute('r', 11); halo.setAttribute('class', 'cl-halo');
+    const dot = document.createElementNS(SVGNS, 'circle');
+    dot.setAttribute('r', 3.2); dot.setAttribute('class', 'cl-dot');
+    const path = document.createElementNS(SVGNS, 'path');
+    const stubPath = document.createElementNS(SVGNS, 'path');
+    stubPath.setAttribute('stroke-opacity', '.8');
+    const num = document.createElementNS(SVGNS, 'text');
+    num.setAttribute('class', 'cl-num');
+    num.setAttribute('text-anchor', 'middle');
+    g.appendChild(halo); g.appendChild(dot); g.appendChild(path); g.appendChild(stubPath); g.appendChild(num);
+    calloutSvg.appendChild(g);
+    // measured once: the text never changes, and reading offsetWidth every
+    // frame would force a layout per label per frame
+    el.style.visibility = 'hidden';
+    const w = Math.max(el.offsetWidth, 60), hh = Math.max(el.offsetHeight, 20);
+    el.style.visibility = '';
+    el.style.display = 'none';
+    g.style.display = 'none';
+    callouts.push({ h: h, el: el, g: g, dot: dot, halo: halo, path: path, stubPath: stubPath,
+                    num: num, w: w, hh: hh });
+  });
+
+  /* Numbered top-down in the assembled engine, not in source order: a plate is
+     read from the cam cover down to the sump. The anchors do not move until the
+     stack explodes, so this is a one-off measurement. */
+  const clWorld = new THREE.Vector3();
+  callouts.forEach(c => { c.h.anchor.getWorldPosition(clWorld); c.wy = clWorld.y; });
+  callouts.sort((a, b) => b.wy - a.wy);
+  callouts.forEach((c, i) => { c.n = i + 1; c.num.textContent = String(c.n); });
+
+  /* A phone has no margin to put names in, so the parts carry a number and the
+     names collect in a legend strip — the way a lettered plate is printed. */
+  const clLegend = document.createElement('div');
+  clLegend.className = 'cl-legend';
+  callouts.forEach(c => {
+    const row = document.createElement('span');
+    row.className = 'cl-legend-row';
+    const b = document.createElement('b');
+    b.textContent = c.n;
+    const em = document.createElement('em');
+    em.textContent = c.h.label;
+    row.appendChild(b); row.appendChild(em);
+    clLegend.appendChild(row);
+    c.lg = row;
+  });
+  calloutLayer.appendChild(clLegend);
+
+  let calloutOn = false;
+
+  function setCalloutMode(on) {
+    calloutOn = on;
+    document.body.classList.toggle('callout-mode', on);
+    if (!on) {
+      callouts.forEach(c => { c.el.style.display = 'none'; c.g.style.display = 'none'; });
+    }
+  }
+
+  const clV = new THREE.Vector3();
+  function placeNumbers(vis) {
+    for (let i = 0; i < callouts.length; i++) {
+      const c = callouts[i];
+      const on = vis.indexOf(c) >= 0;
+      c.lg.classList.toggle('off', !on);
+      c.el.style.display = 'none';
+      c.path.setAttribute('d', '');
+      c.stubPath.setAttribute('d', '');
+      if (!on) { c.g.style.display = 'none'; continue; }
+      c.dot.setAttribute('r', 0);
+      c.halo.setAttribute('r', 8.5);
+      c.halo.setAttribute('cx', c.ax.toFixed(1));
+      c.halo.setAttribute('cy', c.ay.toFixed(1));
+      c.num.setAttribute('x', c.ax.toFixed(1));
+      c.num.setAttribute('y', (c.ay + 3.2).toFixed(1));
+      c.g.style.display = '';
+    }
+  }
+
+  function placeCallouts(list, side, W, H) {
+    if (!list.length) return;
+    const top = 78, bottom = H - 112;
+    const n = list.length;
+    const slot = n > 1 ? Math.min(48, (bottom - top) / (n - 1)) : 0;
+    const y0 = top + ((bottom - top) - slot * (n - 1)) / 2;
+    const edgeX = side < 0 ? 24 : W - 24;
+    for (let i = 0; i < n; i++) {
+      const c = list[i];
+      const ly = n > 1 ? y0 + slot * i : (top + bottom) / 2;
+      c.el.style.display = '';
+      c.el.classList.toggle('cl-l', side < 0);
+      c.el.classList.toggle('cl-r', side > 0);
+      c.el.style.left = (side < 0 ? edgeX : edgeX - c.w) + 'px';
+      c.el.style.top = (ly - c.hh / 2) + 'px';
+      const labelEdge = side < 0 ? edgeX + c.w + 5 : edgeX - c.w - 5;
+      c.dot.setAttribute('r', 3.2);
+      c.halo.setAttribute('r', 11);
+      const stub = c.ax + (side < 0 ? -20 : 20);
+      c.g.style.display = '';
+      c.path.setAttribute('d',
+        'M' + stub.toFixed(1) + ',' + c.ay.toFixed(1) +
+        'L' + labelEdge.toFixed(1) + ',' + ly.toFixed(1));
+      c.stubPath.setAttribute('d',
+        'M' + c.ax.toFixed(1) + ',' + c.ay.toFixed(1) +
+        'L' + stub.toFixed(1) + ',' + c.ay.toFixed(1));
+      // a leader that has to cross most of the frame should recede, not shout
+      const run = Math.abs(labelEdge - stub) + Math.abs(ly - c.ay);
+      c.path.setAttribute('stroke-opacity', run > 620 ? '.28' : run > 380 ? '.38' : '.55');
+      c.dot.setAttribute('cx', c.ax.toFixed(1));
+      c.dot.setAttribute('cy', c.ay.toFixed(1));
+      c.halo.setAttribute('cx', c.ax.toFixed(1));
+      c.halo.setAttribute('cy', c.ay.toFixed(1));
+    }
+  }
+
+  function layoutCallouts() {
+    const W = window.innerWidth, H = window.innerHeight;
+    const vis = [];
+    for (let i = 0; i < callouts.length; i++) {
+      const c = callouts[i];
+      c.h.anchor.getWorldPosition(clV);
+      const vz = clV.clone().applyMatrix4(camera.matrixWorldInverse).z;
+      clV.project(camera);
+      const ax = (clV.x * .5 + .5) * W, ay = (-clV.y * .5 + .5) * H;
+      if (vz > -.5 || ax < 26 || ax > W - 26 || ay < 26 || ay > H - 26) {
+        c.el.style.display = 'none'; c.g.style.display = 'none';
+        continue;
+      }
+      c.ax = ax; c.ay = ay;
+      vis.push(c);
+    }
+    // below 760px the margin columns would eat the part they label
+    const narrow = W < 760;
+    document.body.classList.toggle('cl-narrow', narrow);
+    if (narrow) { placeNumbers(vis); return; }
+    const mid = W * .5;
+    const left = [], right = [];
+    for (let i = 0; i < vis.length; i++) (vis[i].ax < mid ? left : right).push(vis[i]);
+    left.sort((a, b) => a.ay - b.ay);
+    right.sort((a, b) => a.ay - b.ay);
+    placeCallouts(left, -1, W, H);
+    placeCallouts(right, 1, W, H);
+  }
+
   const tmpV = new THREE.Vector3();
   const hsRay = new THREE.Raycaster();
   const hsDir = new THREE.Vector3();
@@ -570,6 +730,11 @@
     hsShown.length = 0;
     const touring = tour.active;
     const diagram = touring && tourStation().diagram;
+    // ten pinned pills in a band = a pile of labels; the diagram station gets
+    // lettered callouts instead (margin columns wide, numbered plate on phones)
+    const wantCallout = !!diagram;
+    if (wantCallout !== calloutOn) setCalloutMode(wantCallout);
+    if (wantCallout) { layoutCallouts(); return; }
     hotspots.forEach(h => {
       const show = !touring ? (state.labels && !h.onlyDiagram && (!h.internal || state.clip > .22 || state.explode > .2))
         : (diagram ? !!h.diagram : false);
@@ -639,7 +804,7 @@
     { t: 'MGU-K · 350kW', s: '与曲轴固定速比 · 制动能量回收 · 禁止独立驱动', tag: 'MGU-K', at: 'mguk', view: V(1.34, 1.14, .58, 3.55, 1.25, 5.1), clip: 0, exp: .06, rpm: 0, fades: {}, dwell: 5200 },
     { t: '正时传动 · 前端', s: '曲轴齿轮 → 惰轮 → 双凸轮轴齿轮 · 碳纤维正时罩已淡出', tag: '正时罩', at: 'timingL', view: V(-2.95, 1.26, .62, -1.2, 2.6, -6.2), clip: 0, exp: .22, rpm: 80, fades: { timing: 0, snout: 0 }, dwell: 5400 },
     { t: '分解 · 装配关系', s: '气门室盖 → 缸盖 → 活塞连杆 → 缸体 → 曲轴 → 油底壳', tag: '气门室盖', at: 'coverL', view: V(-1.9, 1.24, 1.2, 0, 3.2, 0), clip: 0, exp: 1, rpm: 0, fades: {}, dwell: 6000 },
-    { t: '全零件图解', s: '分解到底 · 每个部件的名称直接标在图上 · 曲轴已停转', tag: null, at: null, view: V(-1.86, 1.16, 1.3, 0, 3.1, 0), clip: 0, exp: 1, rpm: 0, fades: {}, dwell: 13000, diagram: true },
+    { t: '全零件图解', s: '分解到底 · 每个部件的名称直接标在图上 · 曲轴已停转', tag: null, at: null, view: V(-1.86, 1.14, 1.06, 0, 3.1, 0), clip: 0, exp: 1, rpm: 0, fades: {}, dwell: 13000, diagram: true },
     { t: '回到整机', s: '循环播放 · 空格暂停 · ← → 切换 · Esc 退出', tag: '进气箱', at: 'plenum', view: V(W0, 1.26, 1, 0, 3.2, 0), clip: 0, exp: 0, rpm: 620, fades: {}, dwell: 4600 }
   ];
 
@@ -658,7 +823,14 @@
     tourFx.style.opacity = st.tag ? '1' : '0';
 
     // camera
-    if (st.view) flyTo(st.view, 1.9);
+    if (st.view) {
+      // a phone is narrow enough that the exploded stack would run off both
+      // sides, taking its numbered markers with it
+      const v = (st.diagram && window.innerWidth < 760)
+        ? Object.assign({}, st.view, { zoom: (st.view.zoom || 1) * 1.26 })
+        : st.view;
+      flyTo(v, 1.9);
+    }
 
     // clip / explode state with UI sync
     state.clip = st.clip || 0;
@@ -685,6 +857,7 @@
     tour.t = 0;
     tourBar.style.width = '0%';
     document.body.classList.toggle('diagram', !!st.diagram);
+    setCalloutMode(!!st.diagram);
     tourTag.style.display = st.tag ? '' : 'none';
     tourPoly.style.display = st.tag ? '' : 'none';
     tourDot.style.display = st.tag ? '' : 'none';
