@@ -922,20 +922,23 @@
     tcover.add(PU.boltMesh(tb, .07, .1, M.machined));
     A.explodeGroups.push({ g: tcover, dir: new THREE.Vector3(0, 0, -1), dist: 2.9 });
 
-    // gear train
+    // gear train: centres spaced by the sum of the pitch radii so the wheels
+    // mesh instead of interpenetrating, and enough teeth to read as gearing
     const gearG = grp(timing, 'gears');
     const gears = [
-      { r: 1.45, teeth: 24, pos: [0, 0], ratio: 1, phase: 0 },
-      { r: .9, teeth: 16, pos: [0, 1.1], ratio: -1, phase: .4 },
-      { r: .8, teeth: 14, pos: [1.9, .55], ratio: -1, phase: .1 },
-      { r: .8, teeth: 14, pos: [-1.9, .55], ratio: -1, phase: .1 }
+      { r: 1.45, teeth: 36, pos: [0, 0], ratio: 1, phase: 0 },
+      { r: .95, teeth: 24, pos: [-1.35, 1.92], ratio: -1, phase: .3 },
+      { r: .95, teeth: 24, pos: [1.35, 1.92], ratio: -1, phase: .3 },
+      { r: .62, teeth: 16, pos: [0, 2.62], ratio: 1, phase: .2 }
     ];
     gears.forEach(g => {
       // sits on the front face of the crankcase, just behind the timing cover:
       // any deeper and the train is swallowed by the case and the cover has
       // nothing to reveal
-      const m = mesh(gearG, PU.gear(g.r, g.teeth, .26, .18), M.machined, g.pos[0], g.pos[1] + 1.35, -6.42);
+      const m = mesh(gearG, PU.gear(g.r, g.teeth, .24, g.r * .22, .955), M.steel, g.pos[0], g.pos[1] + 1.35, -6.44);
       m.rotation.z = g.phase;
+      mesh(gearG, PU.disc(g.r * .3, .34, 20), M.machined, g.pos[0], g.pos[1] + 1.35, -6.6).rotation.x = PI / 2;
+      mesh(gearG, new THREE.TorusGeometry(g.r * .62, .045, 8, 26), M.darkSteel, g.pos[0], g.pos[1] + 1.35, -6.3);
       A.gears.push({ mesh: m, ratio: g.ratio, phase: g.phase, offset: 0 });
     });
     // cam sprockets were pushed to A.gears during bank build
