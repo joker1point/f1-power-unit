@@ -228,13 +228,17 @@
         const d = mesh(web, PU.disc(1.05, .22, 34), M.machined);
         d.rotation.x = PI / 2;
         // solid half-disc: an open-ended half cylinder left two raw edges that
-        // read as thin blades poking out of the crankcase in the cutaway
+        // read as thin blades poking out of the crankcase in the cutaway.
+        // It has to be visibly thicker than the web it shares a plane with
+        // (web .22 → caps at ±.11): at ±.12 the two cap faces sat 0.01 apart,
+        // which is inside the depth precision at this camera range and z-fought
+        // into a checkerboard over the counterweight once the section exposed it.
         if (!PU.cwGeo) {
           const hs = new THREE.Shape();
           hs.absarc(0, 0, 1.42, 0, PI, false);
           hs.lineTo(-1.42, 0);
           hs.closePath();
-          PU.cwGeo = new THREE.ExtrudeGeometry(hs, { depth: .24, bevelEnabled: false, curveSegments: 26 });
+          PU.cwGeo = new THREE.ExtrudeGeometry(hs, { depth: .34, bevelEnabled: false, curveSegments: 26 });
           PU.cwGeo.center();
         }
         const cw = mesh(web, PU.cwGeo, M.machined);
@@ -1144,16 +1148,12 @@
        ========================================================= */
     const clipPlane = new THREE.Plane(new THREE.Vector3(1, 0, 0), 9.6);
 
-    /* Cutaway plane that always faces the viewer.
-       A fixed-axis plane becomes a black wall the moment the camera sits on the
-       removed side, so the normal is re-aimed from the camera every frame and
-       the half of the engine nearest the viewer is taken away instead.
-       The plane is pushed into every material of the unit, so bolts, studs and
-       brackets are sawn along with the casting they sit on and nothing is left
-       floating in mid-air.                                                     */
-    const clipPivot = new THREE.Vector3(0, 2.6, 0);
-    const clipDir = new THREE.Vector3();
-    const clipCam = new THREE.Vector3(0, 6, 34);
+    /* One fixed axial section, the way the first version cut it: the plane is the
+       engine's own centre plane (x = 0) and it never moves with the camera, so a
+       quarter turn does not saw the block diagonally. The unit spans x -7.73..7.73,
+       so with CLIP_FULL = 9.6 the slider reads 0 % = nothing removed and
+       100 % = exactly one half removed.                                              */
+    const CLIP_FULL = 9.6;
     const clipMats = [];
     let clipAmount = 0, clipOn = false;
 
@@ -1172,20 +1172,19 @@
       });
     }
 
-    A.aimClip = function (camPos) {
-      if (camPos) clipCam.copy(camPos);
-      if (clipAmount <= .001) return;
-      clipDir.subVectors(clipPivot, clipCam);
-      clipDir.y = 0;
-      if (clipDir.lengthSq() < 1e-6) clipDir.set(0, 0, -1);
-      clipDir.normalize();
-      clipPlane.normal.copy(clipDir);
-      clipPlane.constant = -clipPivot.dot(clipDir) - 9.6 * (2 * clipAmount - 1);
-    };
+    /* Nothing is flipped to DoubleSide for the section, as in the first version.
+       The unit mixes thick castings and thin sheet under the same materials, and
+       double-sideing a thin sheet puts its own two faces coplanar — they z-fight
+       into a checkerboard across the crankcase. The back-side lining shells
+       (PU.linerMat) are what make a sawn cavity read as a dark machined interior,
+       so the section does not need two-sided shading.                          */
 
+    /* The plane goes into every material of the unit, so bolts, studs and
+       brackets are sawn along with the casting they sit on and nothing is left
+       floating in mid-air.                                                    */
     A.setClip = function (v) {
       clipAmount = v || 0;
-      A.aimClip();
+      clipPlane.constant = CLIP_FULL * (1 - clipAmount);
       const on = clipAmount > .001;
       if (on !== clipOn) {
         clipOn = on;
@@ -1193,13 +1192,6 @@
         clipMats.forEach(m => {
           m.clippingPlanes = on ? [clipPlane] : [];
           m.clipShadows = on;
-          // the sawn interior is the back of the part: with one-sided shading
-          // those faces are culled and the section reads as a black hole
-          const want = on ? THREE.DoubleSide : THREE.FrontSide;
-          if (m.side !== want) {
-            m.side = want;
-            m.shadowSide = on ? THREE.BackSide : null;
-          }
           m.needsUpdate = true;
         });
       }

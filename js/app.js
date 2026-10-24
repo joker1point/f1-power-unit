@@ -795,9 +795,9 @@
     { t: '六个喇叭口', s: '规则禁止可变长度进气 · 固定喇叭口 + 独立节气门 · 罩壳已淡出', tag: '喇叭口 ×6', at: 'stack', view: V(-2.1, 1.0, .62, 0, 7.5, -1.4), clip: 0, exp: .04, rpm: 300, fades: { plenum: .07 }, dwell: 5200 },
     { t: '双凸轮轴 · DOHC', s: '每缸 4 气门 · 气动回位（无金属弹簧）· 气门室盖已淡出', tag: '凸轮轴', at: 'cam', view: V(-2.5, 1.05, .58, -4.2, 6.1, -1.0), clip: 0, exp: .04, rpm: 240, fades: { coverL: 0, coverR: .12 }, dwell: 5400 },
     { t: '气门组', s: '每缸 4 气门 · 钛合金 · 气动回位（无金属弹簧）· 已沿阀杆轴线抽出一只', tag: '气门（抽出）', at: 'valve', view: V(-2.0, 1.3, .42, -4.6, 7.3, -1.6), clip: 0, exp: .04, rpm: 0, fades: { coverL: 0, coverR: .28, camsL: 0, camsR: 0 }, extract: 1, dwell: 5600 },
-    { t: '活塞 · 锻铝', s: 'Ø80mm · 行程 53mm · 三销 120° → 三只活塞本来就不同高', tag: '活塞', at: 'piston', view: V(-3.0, 1.18, .58, -4.1, 3.6, -3.0), clip: .5, exp: .06, rpm: 240, fades: {}, dwell: 5000 },
-    { t: '钛合金连杆', s: '连杆长 105mm · 与曲柄半径 26.5mm 共同决定行程', tag: '连杆', at: 'rod', view: V(-3.0, 1.24, .58, -3.8, 2.4, .2), clip: .55, exp: .06, rpm: 240, fades: {}, dwell: 5000 },
-    { t: '曲轴 · 3 销 120°', s: '规则禁止 split-pin · 发火间隔 90° / 150° 交替', tag: '曲轴', at: 'crank', view: V(-2.78, 1.02, .74, -1.6, 2.5, .2), clip: .55, exp: .12, rpm: 120, fades: {}, dwell: 5200 },
+    { t: '活塞 · 锻铝', s: 'Ø80mm · 行程 53mm · 三销 120° → 三只活塞本来就不同高', tag: '活塞', at: 'piston', view: V(-2.62, 1.2, .53, -1.2, 3.4, -.4), clip: .62, exp: .06, rpm: 240, fades: {}, dwell: 5000 },
+    { t: '钛合金连杆', s: '连杆长 105mm · 与曲柄半径 26.5mm 共同决定行程', tag: '连杆', at: 'rod', view: V(-2.45, 1.24, .57, -.4, 2.4, 0), clip: .78, exp: .06, rpm: 240, fades: {}, dwell: 5000 },
+    { t: '曲轴 · 3 销 120°', s: '规则禁止 split-pin · 发火间隔 90° / 150° 交替', tag: '曲轴', at: 'crank', view: V(-2.62, 1.12, .49, .3, -.6, .3), clip: .85, exp: .12, rpm: 120, fades: {}, dwell: 5200 },
     { t: '排气 · 等长管', s: 'Ø40mm 初段 · 玻纤隔热布缠绕 · 三合一收集器', tag: '排气初段', at: 'exhaust', view: V(-2.15, 1.42, .60, -5.9, 2.4, -1.4), clip: 0, exp: 0, rpm: 620, fades: {}, dwell: 5000 },
     { t: '后置单涡轮', s: '2026 规则：非分体 · 压气机在后 · 进气口朝车尾', tag: '涡轮 / 压气机', at: 'turbo', view: V(-.42, 1.26, .5, -2.5, 3.2, 7.2), clip: 0, exp: 0, rpm: 620, fades: {}, dwell: 5200 },
     { t: '离合器总成', s: '机加工壳体板 · 膜片弹簧 · 与变速箱对接面', tag: '离合器', at: 'clutchL', view: V(.3, 1.3, .60, 0, 1.1, 6.5), clip: 0, exp: .5, rpm: 0, fades: { clutchCover: .05 }, dwell: 5200 },
@@ -1015,7 +1015,6 @@
     model.animate(state.crank);
 
     tickCamera(dt);
-    if (state.clip > .001) model.aimClip(camera.position);
     updateHotspots();
     updateTour(dt);
 
